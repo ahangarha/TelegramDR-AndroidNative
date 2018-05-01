@@ -40,7 +40,7 @@ VoIPControllerWrapper::VoIPControllerWrapper(){
 	controller=new VoIPController();
 	controller->implData=(void*)this;
 	controller->SetStateCallback(VoIPControllerWrapper::OnStateChanged);
-	stateCallback=nullptr;
+	controller->SetSignalBarsCountCallback(VoIPControllerWrapper::OnSignalBarsChanged);
 }
 
 VoIPControllerWrapper::~VoIPControllerWrapper(){
@@ -83,10 +83,6 @@ void VoIPControllerWrapper::SetPublicEndpoints(const Platform::Array<libtgvoip::
 
 void VoIPControllerWrapper::SetNetworkType(NetworkType type){
 	controller->SetNetworkType((int)type);
-}
-
-void VoIPControllerWrapper::SetStateCallback(IStateCallback^ callback){
-	stateCallback=callback;
 }
 
 void VoIPControllerWrapper::SetMicMute(bool mute){
@@ -136,9 +132,16 @@ void VoIPControllerWrapper::OnStateChanged(VoIPController* c, int state){
 	reinterpret_cast<VoIPControllerWrapper^>(c->implData)->OnStateChangedInternal(state);
 }
 
+void VoIPControllerWrapper::OnSignalBarsChanged(VoIPController* c, int count){
+	reinterpret_cast<VoIPControllerWrapper^>(c->implData)->OnSignalBarsChangedInternal(count);
+}
+
 void VoIPControllerWrapper::OnStateChangedInternal(int state){
-	if(stateCallback)
-		stateCallback->OnCallStateChanged((CallState)state);
+	CallStateChanged(this, (CallState)state);
+}
+
+void VoIPControllerWrapper::OnSignalBarsChangedInternal(int count){
+	SignalBarsChanged(this, count);
 }
 
 void VoIPControllerWrapper::SetConfig(double initTimeout, double recvTimeout, DataSavingMode dataSavingMode, bool enableAEC, bool enableNS, bool enableAGC, Platform::String^ logFilePath, Platform::String^ statsDumpFilePath){
@@ -168,6 +171,10 @@ void VoIPControllerWrapper::SetProxy(ProxyProtocol protocol, Platform::String^ a
 	WideCharToMultiByte(CP_UTF8, 0, password->Data(), -1, _password, sizeof(_password), NULL, NULL);
 
 	controller->SetProxy((int)protocol, _address, port, _username, _password);
+}
+
+void VoIPControllerWrapper::SetAudioOutputGainControlEnabled(bool enabled){
+	controller->SetAudioOutputGainControlEnabled(enabled);
 }
 
 void VoIPControllerWrapper::UpdateServerConfig(Platform::String^ json){

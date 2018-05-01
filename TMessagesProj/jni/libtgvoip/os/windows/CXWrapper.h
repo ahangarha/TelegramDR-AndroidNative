@@ -58,9 +58,11 @@ namespace libtgvoip{
 		SOCKS5
 	};
 
-	public interface class IStateCallback{
-		void OnCallStateChanged(CallState newState);
-	};
+	ref class VoIPControllerWrapper;
+	public delegate void CallStateChangedEventHandler(VoIPControllerWrapper^ sender, CallState newState);
+
+	ref class VoIPControllerWrapper;
+	public delegate void SignalBarsChangedEventHandler(VoIPControllerWrapper^ sender, int newCount);
 
     public ref class VoIPControllerWrapper sealed{
     public:
@@ -70,7 +72,6 @@ namespace libtgvoip{
 		void Connect();
 		void SetPublicEndpoints(const Platform::Array<Endpoint^>^ endpoints, bool allowP2P);
 		void SetNetworkType(NetworkType type);
-		void SetStateCallback(IStateCallback^ callback);
 		void SetMicMute(bool mute);
 		void SetEncryptionKey(const Platform::Array<uint8>^ key, bool isOutgoing);
 		void SetConfig(double initTimeout, double recvTimeout, DataSavingMode dataSavingMode, bool enableAEC, bool enableNS, bool enableAGC, Platform::String^ logFilePath, Platform::String^ statsDumpFilePath);
@@ -80,14 +81,20 @@ namespace libtgvoip{
 		Error GetLastError();
 		static Platform::String^ GetVersion();
 		int64 GetPreferredRelayID();
+		void SetAudioOutputGainControlEnabled(bool enabled);
 		static void UpdateServerConfig(Platform::String^ json);
 		static void SwitchSpeaker(bool external);
 		//static Platform::String^ TestAesIge();
+
+		event CallStateChangedEventHandler^ CallStateChanged;
+		event SignalBarsChangedEventHandler^ SignalBarsChanged;
+
 	private:
 		static void OnStateChanged(tgvoip::VoIPController* c, int state);
+		static void OnSignalBarsChanged(tgvoip::VoIPController* c, int count);
 		void OnStateChangedInternal(int state);
+		void OnSignalBarsChangedInternal(int count);
 		tgvoip::VoIPController* controller;
-		IStateCallback^ stateCallback;
     };
 
 	ref class MicrosoftCryptoImpl{
